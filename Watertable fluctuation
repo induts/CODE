@@ -1,0 +1,113 @@
+
+%written by Indu Thekkemeppilly Sivakumar on 02/27/2013
+%this program calculates daily water table levels in an aquifer
+when aquifer parameters and daily precipitation is known. The
+parameters used to model aquifer are given below. Precipitation
+data is store as P.mat
+clear all;
+S1star_min = 20;% minimum standing water in bund. This value
+changes with different water management practices.
+Extr = 150/4; %the amount of water pumped from aquifer
+ms = 0.5;%saturated moisture content
+mr = 0.35;%re distribution moisture content
+md = 0.15;%air dry moisture content%
+k2s = 10; % hydraulic conductivity of puddle layer in mm/day
+d2 = 120; % depth of puddle layer in mm%
+ks =1000; %saturated hydraulic conductivity in mm/day%
+BH =150; %Bund height in mm
+hi = 2400; %Depth of water table below groun
+
+j = 0;
+i=1;
+m(1)=m_init;
+count=0;
+u=0;
+extr(1)=0;
+dp=0.05; %drainable porosity
+J12(1)=S2max-S2(1);
+while(i<=1100)
+ if(j==365)j=1; else j = j+1; end
+ if(m(i)>= mr)
+% if present-day moisture content is greater than
+redistribution moisture content
+ ET(i)=PET;
+ J23(i)=d2*(m(i)+(ms-md)/C*log(C*k2s*exp(-C)/d2/(msmd)+exp(-C*(m(i)-md)/(ms-md)))-md);
+%calculation of downward flux to aquifer as in steenhuis and
+van der molan1986,saleh 1989
+ u=0;
+ else
+ ET(i)=d2*(m(i)-md)*(1-exp(-PET/d2/(ms-md)));
+%calculation of evapotranspiration as in steenhuis and van der
+molen(1986),saleh (1989).
+ J23(i)=0;
+ phi(i)=phih*(exp(5*(1.13-((m(i)-md)/(ms-md))))-0.93);
+% calculation of matric potential,saleh 1989
+ u = ks*(exp(-c*phi(i))-1)/(1-exp(c*h(i)));%upward flux
+equation derived from gardner 1958
+ if(u>PET)
+ u=PET;
+ end;
+ end;
+ S2star=S1(i)+S2(i)+P(i)-J23(i)-ET(i)+u;
+% here layer 1 and 2 are assumed to be combined
+ S1star=S2star-S2max;
+% water available after filling zone 2
+
+ if(S1star>0)
+
+ if (S1star>BH)
+ J12(i+1)=S2max-S2(i);
+ S2(i+1)=S2max;
+ R(i+1)=S1star-BH;% runoff
+ S1(i+1)=BH;
+ extr(i)=0;
+ 
+
+ else
+ if(S1star<S1star_min && ( j>150 || j<270))
+% || OR operator; && AND operator; varying j determines number
+of days irrgated.
+
+ extr(i)=Extr;
+% the amount of water removed from aquifer
+ S1(i+1)=S1star+extr(i);
+ S2(i+1)=S2max;
+ J12(i+1)=S2max-S2(i+1);
+
+ else
+ extr(i)=0;
+ S1(i+1)=S1star+extr(i);
+ S2(i+1)=S2max;
+ J12(i+1)=S2max-S2(i+1);
+
+ end;
+
+ R(i+1)=0;
+ end;
+
+ else
+ R(i+1)=0;
+ if ( j<0|| j>365)
+
+ extr(i)=Extr;
+ S1(i+1)=extr(i);
+ S2(i+1)=S2star;
+ J12(i+1)=S2max-S2(i+1);
+ else
+
+ S1(i+1)=0;
+ S2(i+1)=S2star;
+ extr(i)=0;
+ J12(i+1)=S2max-S2(i+1);
+ end;
+ end;
+U(i)=u;
+ m(i+1)=S2(i+1)/d2 ;
+ h(i+1)=h(i)-((J23(i)-u-extr(i))/dp); %dp is the
+drainable porosity
+ if(h(i+1)<100)
+ h(i+1)=100;
+ end;
+ i=i+1;
+
+end; 
